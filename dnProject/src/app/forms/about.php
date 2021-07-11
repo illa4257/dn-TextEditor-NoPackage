@@ -13,7 +13,7 @@ class about extends AbstractForm
     function doLinkAction(UXEvent $e = null)
     {    
         $this->toast("Ссылка открыта в браузере");
-        browse("https://github.com/illa4257/dn-TextEditor-NoPackage-");
+        browse("https://github.com/illa4257/dn-TextEditor-NoPackage");
     }
 
     /**
