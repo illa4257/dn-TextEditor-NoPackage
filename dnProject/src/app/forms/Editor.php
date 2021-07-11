@@ -22,7 +22,7 @@ class Editor extends AbstractForm
     private $gc;
     private $skip = false;
     private $update = true;
-    private $selection = ["x"=>0,"s"=>false,"sx"=>0,"l"=>0];
+    private $selection = ["x"=>0,"o"=>0,"s"=>false,"sx"=>0,"l"=>0];
     private $scrollX = 0;
     private $maxScrollX = 0;
     private $scrollY = 0;
@@ -83,7 +83,7 @@ class Editor extends AbstractForm
         $wo = 32;
         $bglw = $gc->font->calculateTextWidth((string)max(arr::count(explode("\n",$this->text))-1,0))+$bglo*2;
         $gc->fillColor = $cols["bg"];
-        $gc->fillRect($bglw,0,$w-$bglw,$h);
+        $gc->fillRect($bglw-1,0,$w-$bglw+1,$h);
         $l = -1;
         $b = false;
         $lines=explode("\n",$this->text);
@@ -181,26 +181,48 @@ class Editor extends AbstractForm
                             if($this->selection["sx"]==$this->selection["x"]){ $this->selection["sx"]--; $this->selection["l"]++;
                             }elseif($this->selection["sx"]+$this->selection["l"]==$this->selection["x"]) $this->selection["l"]--;
                             $this->selection["s"]=true;
-                        }else $this->selection["s"]=false; $this->selection["x"]--; } break;
+                        }else $this->selection["s"]=false; $this->selection["x"]--; }else $this->selection["s"]=$e->shiftDown; $this->selection["o"]=0; break;
                 case "Up":
                     if($this->selection["x"]>0){
+                        $o=$this->selection["o"];
+                        $ww2=str::length($this->getLine($this->getIndexLine()-1))+1;
+                        $px=$this->selection["x"]-str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n");
+                        $x=0;
+                        if($px<$ww2){
+                            $o-=$ww2-$px;
+                            $x=$px;
+                            if($o<0){
+                                $x-=$o;
+                                $o=0;
+                            }
+                        }else{
+                            $o+=$px-$ww2;
+                            $x=$px;
+                        }
                         if($e->shiftDown){
-                            if(!$this->selection["s"]){ $this->selection["sx"]=$this->selection["x"]; $this->selection["l"]=0; }
-                            if($this->selection["sx"]==$this->selection["x"]){
-                                $step=str::length($this->getLine($this->getIndexLine($this->selection["x"]-str::length($this->getLine()))))+1;
-                                $this->selection["sx"]-=$step; $this->selection["l"]+=$step;
-                                if($this->selection["sx"]<0){ $this->selection["l"]+=$this->selection["sx"]; $this->selection["sx"]=0; }
+                            if(!$this->selection["s"]){
+                                $this->selection["sx"]=$this->selection["x"]-$x;
+                                $this->selection["l"]=$x;
+                            }elseif($this->selection["sx"]==$this->selection["x"]){
+                                $this->selection["sx"]-=$x;
+                                if($this->selection["sx"]<0){
+                                    $this->selection["l"]+=$this->selection["sx"];
+                                    $this->selection["sx"]=0;
+                                }
+                                $this->selection["l"]+=$x;
                             }elseif($this->selection["sx"]+$this->selection["l"]==$this->selection["x"]){
-                                $this->selection["l"]-=str::length($this->getLine($this->getIndexLine($this->selection["x"]-str::length($this->getLine()))))+1;
+                                $this->selection["l"]-=$x;
                                 if($this->selection["l"]<0){
                                     $this->selection["sx"]+=$this->selection["l"];
-                                    $this->selection["l"]=-$this->selection["l"]; }
+                                    $this->selection["l"]=-$this->selection["l"];
+                                }
                             }
-                            $this->selection["s"]=$this->selection["l"]!=0;
+                            $this->selection["s"]=$this->selection["l"]>0;
                         }else $this->selection["s"]=false;
-                        $this->selection["x"]-=str::length($this->getLine($this->getIndexLine($this->selection["x"]-str::length($this->getLine()))))+1;
+                        $this->selection["o"]=$o;
+                        $this->selection["x"]-=$x;
                         $this->selection["x"]=max($this->selection["x"],0);
-                    }
+                    }else $this->selection["s"]=$e->shiftDown;
                     break;
                 case "Right":
                     if($lt>$this->selection["x"]){
@@ -218,29 +240,44 @@ class Editor extends AbstractForm
                             $this->selection["s"]=$this->selection["l"]!=0;
                         }else $this->selection["s"]=false;
                         $this->selection["x"]++;
-                    }
+                    }else $this->selection["s"]=$e->shiftDown;
+                    $this->selection["o"]=0;
                     break;
                 case "Down":
                     if($lt>$this->selection["x"]){
+                        $o=$this->selection["o"];
+                        $ww=str::length($this->getLine())+1;
+                        $px=$this->selection["x"]-str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n");
+                        $ww2=str::length($this->getLine($this->getIndexLine()+1))+1;
+                        if($px<$ww2){
+                            $o-=$ww2-$px;
+                            $x=$ww2+($ww-$px);
+                            if($o<0){
+                                $x+=$o;
+                                $o=0;
+                            }
+                        }else{
+                            $o+=$px-$ww2;
+                            $x=$ww2+($ww-$px);
+                        }
                         if($e->shiftDown){
-                            if(!$this->selection["s"]){ $this->selection["sx"]=$this->selection["x"];
-                                $this->selection["l"]=0; }
-                            if($this->selection["sx"]+$this->selection["l"]==$this->selection["x"]){
-                                $this->selection["l"]+=str::length($this->getLine())+1;
-                                $this->selection["l"]=min($this->selection["l"],$lt);
+                            if(!$this->selection["s"]){
+                                $this->selection["sx"]=$this->selection["x"];
+                                $this->selection["l"]=$x;
                             }elseif($this->selection["sx"]==$this->selection["x"]){
-                                $this->selection["sx"]+=str::length($this->getLine())+1;
-                                $this->selection["l"]-=str::length($this->getLine())+1;
+                                $this->selection["sx"]+=$x;
+                                $this->selection["l"]-=$x;
                                 if($this->selection["l"]<0){
                                     $this->selection["sx"]+=$this->selection["l"];
                                     $this->selection["l"]=-$this->selection["l"];
                                 }
-                            }
-                            $this->selection["s"]=$this->selection["l"]!=0;
+                            }elseif($this->selection["sx"]+$this->selection["l"]==$this->selection["x"]) $this->selection["l"]=min($this->selection["l"]+$x,$lt-$this->selection["sx"]);
+                            $this->selection["s"]=$this->selection["l"]>0;
                         }else $this->selection["s"]=false;
-                        $this->selection["x"]+=str::length($this->getLine())+1;
+                        $this->selection["o"]=$o;
+                        $this->selection["x"]+=$x;
                         $this->selection["x"] = min($this->selection["x"],$lt);
-                    }
+                    }else $this->selection["s"]=$e->shiftDown;
                     break;
             }
             $this->scroll();
@@ -262,25 +299,82 @@ class Editor extends AbstractForm
             }
             $this->update=true;
         }elseif($e->codeName=="Home"){
-            $this->update=!$this->selection["s"]=false;
-            $this->selection["x"]=str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n")+1;
+            $this->update=true;
+            $this->selection["x"]=str::lastPos(str::sub($this->text,0,$x=$this->selection["x"]),"\n")+1;
+            if($e->shiftDown){
+                if(!$this->selection["s"]){
+                    $this->selection["s"]=true;
+                    $this->selection["l"]=$x-$this->selection["x"];
+                    $this->selection["sx"]=$this->selection["x"];
+                }elseif($this->selection["sx"]!=$this->selection["x"]){
+                    if($this->selection["sx"]>$this->selection["x"]){
+                        if($this->selection["sx"]==$x){
+                            $this->selection["l"]+=$x-$this->selection["x"];
+                            $this->selection["sx"]=$this->selection["x"];
+                        }else{
+                            $this->selection["l"]+=$this->selection["sx"]-$this->selection["x"]-$this->selection["l"];
+                            $this->selection["sx"]-=$this->selection["l"];
+                        }
+                    }else $this->selection["l"]+=$this->selection["x"]-$this->selection["sx"]-$this->selection["l"];
+                }
+            }
             $this->scroll();
         }elseif($e->codeName=="End"){
-            $this->update=!$this->selection["s"]=false;
+            $this->update=true;
+            $x=$this->selection["x"];
             $this->selection["x"]=str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n")+str::length($this->getLine())+1;
+            if($e->shiftDown){
+                if($this->selection["s"]){
+                    if($x==$this->selection["sx"]){
+                        if($x+$this->selection["l"]>$this->selection["x"]){
+                            $xm=$this->selection["x"]-$x;
+                            $this->selection["sx"]+=$xm;
+                            $this->selection["l"]-=$xm;
+                        }else{
+                            $this->selection["l"]=$this->selection["x"]-$x-$this->selection["l"];
+                            $this->selection["sx"]=$this->selection["x"]-$this->selection["l"];
+                        }
+                    }else{
+                        $this->selection["l"]=$this->selection["x"]-$this->selection["sx"];
+                        $this->selection["sx"]=$this->selection["x"]-$this->selection["l"];
+                    }
+                }else{
+                    $this->selection["l"]=$this->selection["x"]-$x;
+                    $this->selection["sx"]=$this->selection["x"]-$this->selection["l"];
+                }
+                $this->selection["s"]=true;
+            }
             $this->scroll();
         }elseif($e->codeName=="Page Up"){
-            $this->update=!$this->selection["s"]=false;
+            $this->update=true;
+            if($e->shiftDown){
+                if(!$this->selection["s"]) $this->selection["l"]=$this->selection["x"];
+                else $this->selection["l"]+=$this->selection["sx"];
+                $this->selection["s"]=true;
+                $this->selection["sx"]=0;
+            }
             $this->selection["x"]=0;
             $this->scroll();
         }elseif($e->codeName=="Page Down"){
-            $this->update=!$this->selection["s"]=false;
+            $this->update=true;
+            if($e->shiftDown){
+                if(!$this->selection["s"]) $this->selection["sx"]=$this->selection["x"];
+                $this->selection["s"]=true;
+                $this->selection["l"]=str::length($this->text)-$this->selection["sx"];
+            }
             $this->selection["x"]=str::length($this->text);
             $this->scroll();
         }elseif($e->codeName=="Esc")
             $this->skip=true;
         elseif($e->controlDown){
             switch($e->codeName){
+                case "X":
+                    if($this->selection["s"]){
+                        UXClipboard::setText(str::sub($this->text,$this->selection["sx"],$this->selection["sx"]+$this->selection["l"]));
+                        $this->text=str::sub($this->text,0,$this->selection["sx"]).str::sub($this->text,$this->selection["sx"]+$this->selection["l"]);
+                        $this->update=true; $this->scroll();
+                    }
+                    break;
                 case "C":
                     if($this->selection["s"]) UXClipboard::setText(str::sub($this->text,$this->selection["sx"],$this->selection["sx"]+$this->selection["l"]));
                     $this->update=true; break;
@@ -290,11 +384,11 @@ class Editor extends AbstractForm
                     if($this->selection["s"]){
                         if($this->selection["sx"]!=$this->selection["x"]) $this->selection["x"]-=$this->selection["l"];
                         $this->selection["s"]=false; }
-                    $this->selection["x"]+=str::length($cb); $this->update=true; break;
+                    $this->selection["x"]+=str::length($cb); $this->update=true; $this->scroll(); $this->selection["o"]=0; break;
                 case "A":
                     $this->selection["s"]=true; $this->selection["sx"]=0;
                     $this->selection["x"]=$this->selection["l"]=str::length($this->text);
-                    $this->update=true; $this->scroll(); break;
+                    $this->update=true; $this->scroll(); $this->selection["o"]=0; break;
                 case "S":
                     if($this->file==null){
                         $fc = new FileChooserScript;
@@ -323,7 +417,7 @@ class Editor extends AbstractForm
             if($this->selection["x"]!=$this->selection["sx"]) $this->selection["x"]-=$this->selection["l"];
             $this->selection["x"]+=str::length($chr);
         }else $this->selection["x"]+=str::length($chr);
-        if(str::length($chr)>0){ $this->update=true; $this->scroll(); }
+        if(str::length($chr)>0){ $this->update=true; $this->scroll(); $this->selection["o"]=0; }
     }
 
     /**
