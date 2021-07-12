@@ -9,5 +9,7 @@
       </items>
     </ComboBox>
     <Data cursor="DEFAULT" enabled="1" id="data-combobox" visible="1"/>
+    <org.develnext.jphp.ext.javafx.support.control.NumberSpinner alignment="CENTER_LEFT" arrowsStyle="RIGHT_VERTICAL" editable="false" focusTraversable="false" id="fontSize" initial="20" layoutX="96" layoutY="0" max="30" min="5" prefHeight="24" prefWidth="56" step="1" styleClass="spinner "/>
+    <Data cursor="DEFAULT" enabled="1" id="data-fontSize" visible="1"/>
   </children>
 </AnchorPane>

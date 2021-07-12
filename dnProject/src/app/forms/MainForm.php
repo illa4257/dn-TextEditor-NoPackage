@@ -48,10 +48,35 @@ class MainForm extends AbstractForm
         $e->target->data("editor")->focused=true;
     }
 
+    /**
+     * @event tabPane.closeRequest 
+     */
+    function doTabPaneCloseRequest(UXEvent $e = null)
+    {    
+        if(!$e->target->data("editor")->saved and !UXDialog::confirm("This file has not been saved! Do you still want to close this tab?")) $e->consume();
+        if($this->tabPane->tabs->count()<=1 and !$e->isConsumed()){
+            $this->hide();
+            exit();
+        }
+    }
+
+    /**
+     * @event close 
+     */
+    function doClose(UXWindowEvent $e = null)
+    {    
+        $saved=true;
+        foreach ($this->tabPane->tabs->toArray() as $tab) if(!$tab->data("editor")->saved) $saved=false;
+        if(!$saved and !UXDialog::confirm("You have unsaved files!")) $e->consume();
+    }
+
     public function newTab(File $file=null){
         $tab = new UXTab($file ? $file->getName() : "new");
         $frag = new UXFragmentPane;
         $editor = new Editor;
+        $editor->observer("title")->addListener(function ($old,$new) use ($tab){
+            $tab->text=$new;
+        });
         $editor->file = $file;
         if($file) $editor->text = file_get_contents(fs::abs($file));
         $editor->showInFragment($frag);

@@ -13,8 +13,8 @@ class Editor extends AbstractForm
      * @var File
      */
     public $file;
-    
     public $focused = false;
+    public $saved = true;
     
     /**
      * @var UXGraphicsContext
@@ -56,6 +56,30 @@ class Editor extends AbstractForm
         if($x==-1) $x = $this->selection["x"];
         return max(arr::count(explode("\n",str::sub($this->text,0,$x)))-1,0);
     }
+    
+    private function getBGLW(){ return $this->gc->font->calculateTextWidth((string)max(arr::count(explode("\n",$this->text))-1,0))+$this->settings["bgLineOffset"]*2; }
+    
+    private function editedFile(){
+        $this->title="*".($this->file ? $this->file->getName() : "new");
+        $this->saved=false;
+    }
+    
+    /**
+     * @return bool
+     */
+    public function save(){
+        if($this->file==null){
+            $fc = new FileChooserScript;
+            $fc->saveDialog=true;
+            $fc->initialFileName="new.txt";
+            if($file=$fc->execute()) $this->file = $file;
+        }
+        if($this->file and file_put_contents(fs::abs($this->file),$this->text)!==false){
+            $this->title=$this->file->getName();
+            return $this->saved=true;
+        }
+        return false;
+    }
 
     /**
      * @event canvas.step 
@@ -68,9 +92,14 @@ class Editor extends AbstractForm
             $this->gc = $this->canvas->gc();
             $this->combobox->value = $this->gc->font->family;
             foreach (UXFont::getFamilies() as $f) $this->combobox->items->add($f);
+            $this->fontSize->value=$this->gc->font->size;
             $this->update=true;
             $this->canvas->observer("width")->addListener(function (){$this->update=true;});
             $this->canvas->observer("height")->addListener(function (){$this->update=true;});
+            $this->fontSize->observer("value")->addListener(function($old,$new){
+                $this->gc->font=$this->gc->font->withSize($new);
+                $this->update=true;
+            });
         }
         $cur = "TEXT";
         $w = $this->canvas->width;
@@ -81,7 +110,7 @@ class Editor extends AbstractForm
         $tlo = $this->settings["lineOffset"];
         $bglo = $this->settings["bgLineOffset"];
         $wo = 32;
-        $bglw = $gc->font->calculateTextWidth((string)max(arr::count(explode("\n",$this->text))-1,0))+$bglo*2;
+        $bglw=$this->getBGLW();
         $gc->fillColor = $cols["bg"];
         $gc->fillRect($bglw-1,0,$w-$bglw+1,$h);
         $l = -1;
@@ -100,36 +129,39 @@ class Editor extends AbstractForm
             $l+=str::length($line)+1;
             $ly=$y*($gc->font->size+$to)+$to-$this->scrollY;
             $ty=$ly+$gc->font->size;
-            
+            $render=($ty+$gc->font->size*2>0 and $ly<$h);
             if($this->selection["s"]){
                 $x=$bglw+$tlo-$this->scrollX;
                 $ws=$gc->font->calculateTextWidth($line);
                 if($l>=$this->selection["sx"] and $this->selection["sx"]>=$ol){
                     $b=true;
-                    $x+=$gc->font->calculateTextWidth(str::sub($line,0,$this->selection["sx"]-$ol));
-                    $ws-=$gc->font->calculateTextWidth(str::sub($line,0,$this->selection["sx"]-$ol));
+                    if($render){
+                        $x+=$gc->font->calculateTextWidth(str::sub($line,0,$this->selection["sx"]-$ol));
+                        $ws-=$gc->font->calculateTextWidth(str::sub($line,0,$this->selection["sx"]-$ol));
+                    }
                 }
                 $r=$b;
                 if($l>=$this->selection["sx"]+$this->selection["l"]){
                     $b=false;
-                    $ws-=$gc->font->calculateTextWidth(str::sub($line,$this->selection["sx"]+$this->selection["l"]-$ol));
+                    if($render) $ws-=$gc->font->calculateTextWidth(str::sub($line,$this->selection["sx"]+$this->selection["l"]-$ol));
                 }
-                if($r){
+                if($r and $render){
                     $gc->fillColor = $cols["sc"];
                     $gc->fillRect($x,$ly,$ws,$gc->font->size+$to);
                 }
             }
-            if($ol<=$this->selection["x"] and $l>=$this->selection["x"]){
+            if($ol<=$this->selection["x"] and $l>=$this->selection["x"] and $render){
                 $gc->fillColor = $cols["ec"];
                 $gc->fillRect($bglw+$tlo-$this->scrollX+$gc->font->calculateTextWidth(str::sub($line,0,$this->selection["x"]-$ol)),$ly,2,$gc->font->size+$to);
             }
-            $gc->fillColor=$cols["tc"];
-            $gc->fillText($line,$bglw+$tlo-$this->scrollX,$ty);
-            
-            $gc->fillColor = $cols["bgl"];
-            $gc->fillRect(0,$ly,$bglw,$gc->font->size+$to);
-            $gc->fillColor=$cols["tcl"];
-            $gc->fillText($y,$bglw-($gc->font->calculateTextWidth($y)+$bglo),$ty);
+            if($render){
+                $gc->fillColor=$cols["tc"];
+                $gc->fillText($line,$bglw+$tlo-$this->scrollX,$ty);
+                $gc->fillColor = $cols["bgl"];
+                $gc->fillRect(0,$ly,$bglw,$gc->font->size+$to);
+                $gc->fillColor=$cols["tcl"];
+                $gc->fillText($y,$bglw-($gc->font->calculateTextWidth($y)+$bglo),$ty);
+            }
         }
         $gc->fillColor=$cols["bgs"];
         $gc->fillRect($w-16,0,16,$h-16);
@@ -146,6 +178,7 @@ class Editor extends AbstractForm
         if($this->xmode) $cur="DEFAULT";
         $gc->fillColor=($this->cy>$h-16 and $hsx+$hs>$this->cx and $this->cx>$hsx) ? $cols["bgsbh"] : $cols["bgsb"];
         $gc->fillRect($hsx,$h-16,$hs,$hs);
+        if($this->cx<$bglw) $cur="DEFAULT";
         $this->canvas->cursor=$cur;
     }
 
@@ -289,7 +322,7 @@ class Editor extends AbstractForm
                     $this->selection["x"]-=$this->selection["l"];
                     if($this->selection["x"]<0) $this->selection["x"]=0; }
             }else $this->selection["x"]-=$this->selection["x"]>0 ? 1 : 0;
-            $this->update=true; $this->scroll();
+            $this->editedFile(); $this->update=true; $this->scroll();
         }elseif($e->codeName=="Delete"){ $this->skip = true;
             $this->text=$this->selection["s"] ? str::sub($this->text,0,$this->selection["sx"]).str::sub($this->text,$this->selection["sx"]+$this->selection["l"]) : str::sub($this->text,0,$this->selection["x"]).str::sub($this->text,$this->selection["x"]+1);
             if($this->selection["s"]){ $this->selection["s"]=false;
@@ -297,7 +330,7 @@ class Editor extends AbstractForm
                     $this->selection["x"]-=$this->selection["l"];
                     if($this->selection["x"]<0) $this->selection["x"]=0; }
             }
-            $this->update=true;
+            $this->editedFile(); $this->update=true;
         }elseif($e->codeName=="Home"){
             $this->update=true;
             $this->selection["x"]=str::lastPos(str::sub($this->text,0,$x=$this->selection["x"]),"\n")+1;
@@ -372,7 +405,7 @@ class Editor extends AbstractForm
                     if($this->selection["s"]){
                         UXClipboard::setText(str::sub($this->text,$this->selection["sx"],$this->selection["sx"]+$this->selection["l"]));
                         $this->text=str::sub($this->text,0,$this->selection["sx"]).str::sub($this->text,$this->selection["sx"]+$this->selection["l"]);
-                        $this->update=true; $this->scroll();
+                        $this->editedFile(); $this->update=true; $this->scroll();
                     }
                     break;
                 case "C":
@@ -384,22 +417,13 @@ class Editor extends AbstractForm
                     if($this->selection["s"]){
                         if($this->selection["sx"]!=$this->selection["x"]) $this->selection["x"]-=$this->selection["l"];
                         $this->selection["s"]=false; }
-                    $this->selection["x"]+=str::length($cb); $this->update=true; $this->scroll(); $this->selection["o"]=0; break;
+                    $this->selection["x"]+=str::length($cb); $this->editedFile(); $this->update=true; $this->scroll(); $this->selection["o"]=0; break;
                 case "A":
                     $this->selection["s"]=true; $this->selection["sx"]=0;
                     $this->selection["x"]=$this->selection["l"]=str::length($this->text);
                     $this->update=true; $this->scroll(); $this->selection["o"]=0; break;
                 case "S":
-                    if($this->file==null){
-                        $fc = new FileChooserScript;
-                        $fc->saveDialog=true;
-                        $fc->initialFileName="new.txt";
-                        if($file=$fc->execute()) $this->file = $file;
-                    }
-                    if($this->file!=null){
-                        file_put_contents(fs::abs($this->file),$this->text);
-                        alert("Файл ".fs::name($this->file)." cохранён!");
-                    }
+                    $this->save();
                     break;
             }
             $this->skip=true;
@@ -410,14 +434,14 @@ class Editor extends AbstractForm
      * @event canvas.keyPress 
      */
     function doCanvasKeyPress(UXKeyEvent $e = null){
-        if($this->skip){ $this->skip=false; return; }
-        $chr=str::lines($e->character)[0]=="" ? "\n" : $e->character;
+        if($this->skip){ $this->skip=false; return; } $chr=$e->character;
+        if(str::lines($chr)[0]=="") $chr=$this->getIndexLine()>=0 ? "\n".str::sub($this->getLine(),0,str::pos($this->getLine()."a",str_replace([" ","\t"],"",$this->getLine()."a")[0])) : "\n";
         $this->text = $this->selection["s"] ? str::sub($this->text,0,$this->selection["sx"]).$chr.str::sub($this->text,$this->selection["sx"]+$this->selection["l"]) : str::sub($this->text,0,$this->selection["x"]).$chr.str::sub($this->text,$this->selection["x"]);
         if($this->selection["s"]){ $this->selection["s"] = false;
             if($this->selection["x"]!=$this->selection["sx"]) $this->selection["x"]-=$this->selection["l"];
             $this->selection["x"]+=str::length($chr);
         }else $this->selection["x"]+=str::length($chr);
-        if(str::length($chr)>0){ $this->update=true; $this->scroll(); $this->selection["o"]=0; }
+        if(str::length($chr)>0){ $this->editedFile(); $this->update=true; $this->scroll(); $this->selection["o"]=0; }
     }
 
     /**
@@ -433,30 +457,68 @@ class Editor extends AbstractForm
     /**
      * @event canvas.scroll 
      */
-    function doCanvasScroll(UXScrollEvent $e = null){
-        if($this->xmode) $this->scrollX-=$e->deltaY; else $this->scrollY-=$e->deltaY;
-        $this->scrollX-=$e->deltaX; $this->update=true;
-    }
+    function doCanvasScroll(UXScrollEvent $e = null){ if($this->xmode) $this->scrollX-=$e->deltaY; else $this->scrollY-=$e->deltaY; $this->scrollX-=$e->deltaX; $this->update=true; }
     
     private $dc = 0;
     private $sp = [0,0];
+    private $dur = 0;
+    private function calcX($pos){
+        $li = min(floor(($pos[1]+$this->scrollY)/($this->gc->font->size+$this->settings["textOffset"])-0.25),arr::count(explode("\n",$this->text)));
+        $x=0;
+        for($i=0;$i<$li;$i++) $x+=str::length($this->getLine($i))+1;
+        $ww=$this->gc->font->calculateTextWidth($this->getLine($i));
+        $wl=str::length($this->getLine($i));
+        $bglw=$this->getBGLW();
+        $i=0;
+        while($i<$wl and $this->gc->font->calculateTextWidth(str::sub($this->getLine($li),0,$i+1))<$pos[0]+$this->scrollX-$bglw) $i++;
+        $x+=$i;
+        return min($x,str::length($this->text));
+    }
 
     /**
      * @event canvas.mouseDrag 
      */
-    function doCanvasMouseDrag(UXMouseEvent $e = null)
-    {
+    function doCanvasMouseDrag(UXMouseEvent $e = null){
         $w=$this->canvas->width;
         $h=$this->canvas->height;
-        if($w-16<$this->sp[0] and $h-16>$this->sp[1]) $this->scrollY=(1/($h-16)*$e->y)*$this->maxScrollY;
-        if($h-16<$this->sp[1] and $w-16>$this->sp[0]) $this->scrollX=(1/($w-16)*$e->x)*$this->maxScrollX;
+        if($w-16<$this->sp[0] and $h-16>$this->sp[1])
+            $this->scrollY=(1/($h-16)*$e->y)*$this->maxScrollY;
+        elseif($h-16<$this->sp[1] and $w-16>$this->sp[0])
+            $this->scrollX=(1/($w-16)*$e->x)*$this->maxScrollX;
+        else{
+            $x=$this->selection["x"];
+            $this->selection["x"]=$this->calcX($this->sp=[$e->x,$e->y]);
+            if(!$this->selection["s"]){
+                $this->selection["sx"]=$this->selection["x"]-$d;
+                $this->selection["l"]=0;
+                $this->dur=0;
+            }
+            $this->dur+=$this->selection["x"]-$x;
+            if($this->dur<0){
+                $this->selection["sx"]=$this->selection["x"];
+                $this->selection["l"]=-$this->dur;
+            }else{
+                $this->selection["sx"]=$this->selection["x"]-$this->dur;
+                $this->selection["l"]=$this->dur;
+            }
+            $this->selection["s"]=$this->selection["l"]>0;
+        }
         $this->update=true;
     }
 
     /**
      * @event canvas.mouseDown 
      */
-    function doCanvasMouseDown(UXMouseEvent $e = null){ if($this->dc==0) $this->sp=[$e->x,$e->y]; $this->dc++; }
+    function doCanvasMouseDown(UXMouseEvent $e = null){
+        if($this->dc==0){
+            if(!($w-16<$this->sp[0] and $h-16>$this->sp[1]) and !($h-16<$this->sp[1] and $w-16>$this->sp[0])){
+                $this->selection["x"]=$this->calcX($this->sp=[$e->x,$e->y]);
+                $this->selection["s"]=false;
+            }
+            $this->update=true;
+        }
+        $this->dc++;
+    }
 
     /**
      * @event canvas.mouseUp 
