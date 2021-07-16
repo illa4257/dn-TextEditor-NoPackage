@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project author="i0972" authorOS="Windows 10" createdAt="1625773010180" ideName="DevelNext" ideVersion="16.7.0" ideVersionHash="2017103112" name="TextEditor v1.0" packageName="app" template="ide\project\templates\DefaultGuiProjectTemplate" updatedAt="1626122637714">
+<project author="i0972" authorOS="Windows 10" createdAt="1626359696223" ideName="DevelNext" ideVersion="16.7.0" ideVersionHash="2017103112" name="TextEditor v1.0.1" packageName="app" template="ide\project\templates\DefaultGuiProjectTemplate" updatedAt="1626448169349">
   <tree>
     <expanded>
     <path src=""/>
@@ -7,11 +7,12 @@
       <path src="/src/.theme"/>
       <path src="/src/app"/>
       <path src="/src/app/forms"/>
-      <path src="/src/app/modules"/>
+      <path src="/src/tools"/>
     </expanded>
   </tree>
   <openedFiles>
-  <file selected="1" src="TextEditor v1.0.dnproject"/>
+  <file selected="1" src="TextEditor v1.0.1.dnproject"/>
+    <file src="src/app/forms/Settings.php"/>
   </openedFiles>
   <files/>
   <behaviours>

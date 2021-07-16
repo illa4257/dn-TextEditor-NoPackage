@@ -1,0 +1,108 @@
+.tree-view, .tree-cell {
+    -fx-background-color:#333;
+    -fx-text-fill:#f2f2f2;
+}
+
+.tree-cell:hover {
+    -fx-background-color:#444;
+}
+
+.tree-cell:selected {
+    -fx-background-color:#555;
+}
+
+.scroll-pane {
+    -fx-background:#3b3b3b;
+    -fx-background-insets:0;
+    -fx-padding:0;
+}
+
+.menu-bar .label {
+    -fx-text-fill:#f2f2f2;
+}
+
+.menu-bar .menu-button:hover, .menu-bar .menu-button:focused, .menu-bar .menu-button:showing {
+    -fx-background:#fff1;
+}
+
+.menu-item {
+    -fx-text-fill:#f2f2f2;
+    -fx-background:#fff1;
+}
+
+.menu-item .label{
+    -fx-text-fill:#f2f2f2;
+}
+
+.menu-button, .menu-button:hover, .menu-button:selected, .menu-button:focused {
+    -fx-mark-color:#f2f2f2;
+}
+
+.arrow {
+    -fx-background-color:#f2f2f2;
+}
+
+.context-menu {
+    -fx-background-color:#444;
+}
+
+.tab:selected {
+    -fx-background-color:#444;
+}
+
+.tab .tab-close-button {
+    -fx-background-color:#f2f2f2;
+}
+
+.tab .tab-label {
+    -fx-text-fill:#f2f2f2;
+}
+
+.combo-box {
+    -fx-background-color:#444;
+    -fx-color:#444;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill:#f2f2f2;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color:#444;
+}
+
+.combo-box-popup .list-view .list-cell:filled:selected, .combo-box-popup .list-view .list-cell:filled:selected:hover {
+    -fx-background-color:#fff3;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color:#fff1;
+    -fx-text-fill:#f2f2f2;
+}
+
+.scroll-bar:horizontal .track, .scroll-bar:vertical .track {
+    -fx-background-color:#444;
+}
+
+.scroll-bar:horizontal .thumb, .scroll-bar:vertical .thumb {
+    -fx-background-color:#fff3;
+
+}
+
+.spinner .increment-arrow-button, .spinner .decrement-arrow-button {
+    -fx-body-color:#444;
+    -fx-color:#000;
+}
+
+.spinner .increment-arrow-button:hover, .spinner .decrement-arrow-button:hover {
+    -fx-body-color:#555;
+}
+
+.text-input {
+    -fx-background-color:#444;
+    -fx-text-fill:#f2f2f2;
+}
+
+.label {
+    -fx-text-fill:#f2f2f2;
+}

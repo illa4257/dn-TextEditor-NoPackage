@@ -6,7 +6,6 @@ use std, gui, framework, app;
 
 class Editor extends AbstractForm
 {
-
     public $text="";
     
     /**
@@ -15,6 +14,24 @@ class Editor extends AbstractForm
     public $file;
     public $focused = false;
     public $saved = true;
+    public $settings = [
+        "colors"=>[
+            "bg"=>"#ccc",
+            "bgl"=>"#e3e3e3",
+            "tc"=>"#333",
+            "tcl"=>"#333",
+            "sc"=>"#99f",
+            "ec"=>"#000",
+            "bgs"=>"#0001",
+            "bgsb"=>"#0002",
+            "bgsbh"=>"#0003"
+        ],
+        "textOffset"=>3,
+        "bgLineOffset"=>8,
+        "lineOffset"=>5,
+        "scrollbarWidth"=>16,
+        "scrollbarOffset"=>8
+    ];
     
     /**
      * @var UXGraphicsContext
@@ -30,22 +47,6 @@ class Editor extends AbstractForm
     private $cx = -1;
     private $cy = -1;
     private $xmode = false;
-    private $settings = [
-        "colors"=>[
-            "bg"=>"#333",
-            "bgl"=>"#444",
-            "tc"=>"#f2f2f2",
-            "tcl"=>"#f2f2f2",
-            "sc"=>"#33b",
-            "ec"=>"#fff",
-            "bgs"=>"#fff1",
-            "bgsb"=>"#fff2",
-            "bgsbh"=>"#fff3"
-        ],
-        "textOffset"=>3,
-        "bgLineOffset"=>8,
-        "lineOffset"=>5
-    ];
     
     private function getLine($y=-1){
         if($y==-1) $y = $this->getIndexLine();
@@ -79,6 +80,10 @@ class Editor extends AbstractForm
             return $this->saved=true;
         }
         return false;
+    }
+    
+    public function update(){
+        $this->update=true;
     }
 
     /**
@@ -116,8 +121,9 @@ class Editor extends AbstractForm
         $l = -1;
         $b = false;
         $lines=explode("\n",$this->text);
-        $this->maxScrollX=max($gc->font->calculateTextWidth($this->text)-$w+$wo,0);
-        $this->maxScrollY=max((arr::count($lines)+1)*($gc->font->size+$to)+$to*2-$h,0);
+        $sbw=$this->settings["scrollbarWidth"];
+        $this->maxScrollX=max($gc->font->calculateTextWidth($this->text)-$w+$wo+$this->settings["scrollbarWidth"],0);
+        $this->maxScrollY=max((arr::count($lines))*($gc->font->size+$to)-$h+$sbw+$this->settings["scrollbarOffset"],0);
         if($this->scrollX>$this->maxScrollX) $this->scrollX=$this->maxScrollX;
         if($this->scrollY>$this->maxScrollY) $this->scrollY=$this->maxScrollY;
         if($this->scrollX<0) $this->scrollX=0;
@@ -164,20 +170,20 @@ class Editor extends AbstractForm
             }
         }
         $gc->fillColor=$cols["bgs"];
-        $gc->fillRect($w-16,0,16,$h-16);
-        $vs=max((1-min(1/($h-16)*max($this->maxScrollY,1),1))*($h-16),16);
-        $vsy=(1/$this->maxScrollY)*$this->scrollY*($h-16-$vs);
-        if($this->cx>$w-16 and $this->cy<$h-16) $cur="DEFAULT";
-        $gc->fillColor=($this->cx>$w-16 and $vsy+$vs>$this->cy and $this->cy>$vsy) ? $cols["bgsbh"] : $cols["bgsb"];
-        $gc->fillRect($w-16,$vsy,16,$vs);
+        $gc->fillRect($w-$sbw,0,$sbw,$h-$sbw);
+        $vs=max((1-min(1/($h-$sbw)*max($this->maxScrollY,1),1))*($h-$sbw),$sbw);
+        $vsy=(1/$this->maxScrollY)*$this->scrollY*($h-$sbw-$vs);
+        if($this->cx>$w-$sbw and $this->cy<$h-$sbw) $cur="DEFAULT";
+        $gc->fillColor=($this->cx>$w-$sbw and $vsy+$vs>$this->cy and $this->cy>$vsy) ? $cols["bgsbh"] : $cols["bgsb"];
+        $gc->fillRect($w-$sbw,$vsy,$sbw,$vs);
         $gc->fillColor=$cols["bgs"];
-        $gc->fillRect(0,$h-16,$w-16,16);
-        $hs=max((1-min(1/($w-16)*max($this->maxScrollX,1),1))*($w-16),16);
-        $hsx=(1/$this->maxScrollX)*$this->scrollX*($w-16-$hs);
-        $this->xmode=($this->cy>$h-16 and $this->cx<$w-16);
+        $gc->fillRect(0,$h-$sbw,$w-$sbw,$sbw);
+        $hs=max((1-min(1/($w-$sbw)*max($this->maxScrollX,1),1))*($w-$sbw),$sbw);
+        $hsx=(1/$this->maxScrollX)*$this->scrollX*($w-$sbw-$hs);
+        $this->xmode=($this->cy>$h-$sbw and $this->cx<$w-$sbw);
         if($this->xmode) $cur="DEFAULT";
-        $gc->fillColor=($this->cy>$h-16 and $hsx+$hs>$this->cx and $this->cx>$hsx) ? $cols["bgsbh"] : $cols["bgsb"];
-        $gc->fillRect($hsx,$h-16,$hs,$hs);
+        $gc->fillColor=($this->cy>$h-$sbw and $hsx+$hs>$this->cx and $this->cx>$hsx) ? $cols["bgsbh"] : $cols["bgsb"];
+        $gc->fillRect($hsx,$h-$sbw,$hs,$hs);
         if($this->cx<$bglw) $cur="DEFAULT";
         $this->canvas->cursor=$cur;
     }
@@ -190,13 +196,16 @@ class Editor extends AbstractForm
     public function scroll(){
         $lw=$this->gc->font->calculateTextWidth((string)max(arr::count(explode("\n",$this->text))-1,0))+$this->settings["lineOffset"]*2+$this->settings["textOffset"];
         $w=$this->canvas->width;
-        $tw=$this->gc->font->calculateTextWidth(str::sub($this->getLine(),0,$this->selection["x"]-1-str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n")))+$lw*2;
-        if($this->scrollX+$w<$tw) $this->scrollX=$tw-$w; $tw-=$lw*2;
+        $tw=$this->gc->font->calculateTextWidth(str::sub($this->getLine(),0,$this->selection["x"]-1-str::lastPos(str::sub($this->text,0,$this->selection["x"]),"\n")))+$lw*2+$this->settings["scrollbarWidth"];
+        if($this->scrollX+$w<$tw) $this->scrollX=$tw-$w;
+        $tw-=$lw*2+$this->settings["scrollbarWidth"];
         if($this->scrollX>$tw) $this->scrollX=$tw;
         $h=$this->canvas->height;
-        $y=$this->getIndexLine($this->selection["x"])*($this->gc->font->size+$this->settings["textOffset"])+$this->gc->font->size+$this->settings["textOffset"];
-        if($y>$this->scrollY+$h-$this->gc->font->size) $this->scrollY=$y+$this->gc->font->size+$this->settings["textOffset"]*3-$h;
-        if($this->scrollY+$this->gc->font->size>$y) $this->scrollY=$y-$this->gc->font->size;
+        $sbh=$this->settings["scrollbarWidth"]+$this->settings["scrollbarOffset"];
+        $y=($this->getIndexLine($this->selection["x"])+1)*($this->gc->font->size+$this->settings["textOffset"]);
+        if($y+$sbh>$this->scrollY+$h) $this->scrollY=$y+$sbh-$h;
+        $y-=$this->gc->font->size+$this->settings["textOffset"];
+        if($this->scrollY>$y) $this->scrollY=$y;
     }
 
     /**
@@ -507,9 +516,9 @@ class Editor extends AbstractForm
     }
 
     /**
-     * @event canvas.mouseDown 
+     * @event canvas.mouseDown  
      */
-    function doCanvasMouseDown(UXMouseEvent $e = null){
+    function doCanvasMouseDown($e = null){
         if($this->dc==0){
             if(!($w-16<$this->sp[0] and $h-16>$this->sp[1]) and !($h-16<$this->sp[1] and $w-16>$this->sp[0])){
                 $this->selection["x"]=$this->calcX($this->sp=[$e->x,$e->y]);

@@ -13,7 +13,7 @@
       </font>
     </LabelEx>
     <Data cursor="DEFAULT" enabled="1" id="data-labelAlt" visible="1"/>
-    <Hyperlink alignment="CENTER_LEFT" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" id="link" layoutX="8" layoutY="192" prefHeight="17" prefWidth="40" styleClass="hyperlink " text="GitHub" textAlignment="LEFT" wrapText="false">
+    <Hyperlink alignment="CENTER" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" id="link" layoutX="8" layoutY="192" prefHeight="17" prefWidth="48" styleClass="hyperlink " text="GitHub" textAlignment="LEFT" wrapText="false">
       <font>
         <Font name="System Regular" size="12"/>
       </font>
@@ -25,13 +25,13 @@
       </font>
     </LabelEx>
     <Data cursor="DEFAULT" enabled="1" id="data-label3" visible="1"/>
-    <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="label4" layoutX="48" layoutY="192" prefHeight="17" prefWidth="8" styleClass="label " text="-" textAlignment="LEFT" underline="false" wrapText="false">
+    <LabelEx alignment="CENTER" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="label4" layoutX="56" layoutY="192" prefHeight="17" prefWidth="8" styleClass="label " text="-" textAlignment="LEFT" underline="false" wrapText="false">
       <font>
         <Font name="System Regular" size="12"/>
       </font>
     </LabelEx>
     <Data cursor="DEFAULT" enabled="1" id="data-label4" visible="1"/>
-    <Hyperlink alignment="CENTER_LEFT" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" id="linkAlt" layoutX="56" layoutY="192" prefHeight="17" prefWidth="40" styleClass="hyperlink " text="DNHub" textAlignment="LEFT" wrapText="false">
+    <Hyperlink alignment="CENTER" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" id="linkAlt" layoutX="64" layoutY="192" prefHeight="17" prefWidth="48" styleClass="hyperlink " text="DNHub" textAlignment="LEFT" wrapText="false">
       <font>
         <Font name="System Regular" size="12"/>
       </font>
