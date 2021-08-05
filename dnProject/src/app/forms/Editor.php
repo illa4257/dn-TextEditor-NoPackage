@@ -414,7 +414,7 @@ class Editor extends AbstractForm
                     if($this->selection["s"]){
                         UXClipboard::setText(str::sub($this->text,$this->selection["sx"],$this->selection["sx"]+$this->selection["l"]));
                         $this->text=str::sub($this->text,0,$this->selection["sx"]).str::sub($this->text,$this->selection["sx"]+$this->selection["l"]);
-                        $this->editedFile(); $this->update=true; $this->scroll();
+                        $this->editedFile(); $this->selection["x"]=$this->selection["sx"]; $this->selection["s"]=!$this->update=true; $this->scroll();
                     }
                     break;
                 case "C":

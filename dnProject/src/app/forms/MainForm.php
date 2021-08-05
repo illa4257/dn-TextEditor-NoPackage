@@ -142,13 +142,13 @@ class Config {
     }
     
     public function set($key,$value){
+        $data="";
         if($keys=$this->keys()){
             $keys[$key]=$value;
-            $data="";
             foreach ($keys as $key=>$value){
                 $data.=$key."=".$value."\n";
             }
-            return file_put_contents($this->dir,$data)!==false;
-        }else return false;
+        }
+        return file_put_contents($this->dir,$data)!==false;
     }
 }
